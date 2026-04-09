@@ -43,8 +43,11 @@ class VotingService
 
     public function submitVote(VotingLink $link, array $answers, string $ip, string $userAgent): VotingResponse
     {
-        return DB::transaction(function () use ($link, $answers, $ip, $userAgent) {
-            // Create session
+        // Pre-load valid questions and their option IDs for this campaign
+        $campaign = $link->campaign;
+        $validQuestions = $campaign->questions()->active()->with('options')->get()->keyBy('id');
+
+        return DB::transaction(function () use ($link, $answers, $ip, $userAgent, $validQuestions) {
             $session = VotingSession::create([
                 'voting_link_id' => $link->id,
                 'campaign_id' => $link->campaign_id,
@@ -57,7 +60,6 @@ class VotingService
                 'is_completed' => true,
             ]);
 
-            // Create response
             $response = VotingResponse::create([
                 'session_id' => $session->id,
                 'campaign_id' => $link->campaign_id,
@@ -65,28 +67,42 @@ class VotingService
                 'club_id' => $link->club_id,
             ]);
 
-            // Save answers
             foreach ($answers as $questionId => $answer) {
+                // Skip if question doesn't belong to this campaign
+                $question = $validQuestions->get((int) $questionId);
+                if (!$question) {
+                    continue;
+                }
+
+                $validOptionIds = $question->options->pluck('id')->toArray();
+
                 if (is_array($answer)) {
-                    // Checkbox - multiple options
+                    // Checkbox - multiple options: only save valid option IDs
                     foreach ($answer as $optionId) {
-                        VotingResponseAnswer::create([
-                            'response_id' => $response->id,
-                            'question_id' => $questionId,
-                            'option_id' => $optionId,
-                        ]);
+                        if (in_array((int) $optionId, $validOptionIds)) {
+                            VotingResponseAnswer::create([
+                                'response_id' => $response->id,
+                                'question_id' => $questionId,
+                                'option_id' => $optionId,
+                            ]);
+                        }
                     }
                 } else {
+                    // Radio/single: verify option belongs to this question
+                    $optionId = is_numeric($answer) ? (int) $answer : null;
+                    if ($optionId && !in_array($optionId, $validOptionIds)) {
+                        continue; // Skip invalid option
+                    }
+
                     VotingResponseAnswer::create([
                         'response_id' => $response->id,
                         'question_id' => $questionId,
-                        'option_id' => is_numeric($answer) ? $answer : null,
-                        'text_answer' => is_numeric($answer) ? null : $answer,
+                        'option_id' => $optionId,
+                        'text_answer' => $optionId ? null : $answer,
                     ]);
                 }
             }
 
-            // Mark link as used
             $link->markAsUsed();
 
             return $response;

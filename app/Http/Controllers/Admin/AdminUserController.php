@@ -12,6 +12,17 @@ use Illuminate\Validation\Rules\Password;
 
 class AdminUserController extends Controller
 {
+    /**
+     * Resolve the {admin} route parameter to only club-admin users.
+     */
+    private function resolveClubAdmin(User $admin): User
+    {
+        if (!$admin->hasRole('club-admin')) {
+            abort(404);
+        }
+        return $admin;
+    }
+
     public function index()
     {
         $admins = User::role('club-admin')->with('club')->latest()->paginate(15);
@@ -32,7 +43,6 @@ class AdminUserController extends Controller
             'phone' => 'nullable|string|max:20',
             'password' => ['required', Password::defaults()],
             'club_id' => 'required|exists:clubs,id',
-            'is_active' => 'boolean',
         ]);
 
         $validated['password'] = Hash::make($validated['password']);
@@ -49,19 +59,21 @@ class AdminUserController extends Controller
 
     public function edit(User $admin)
     {
+        $this->resolveClubAdmin($admin);
         $clubs = Club::active()->get();
         return view('admin.admins.edit', compact('admin', 'clubs'));
     }
 
     public function update(Request $request, User $admin)
     {
+        $this->resolveClubAdmin($admin);
+
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'email' => 'required|email|unique:users,email,' . $admin->id,
             'phone' => 'nullable|string|max:20',
             'password' => ['nullable', Password::defaults()],
             'club_id' => 'required|exists:clubs,id',
-            'is_active' => 'boolean',
         ]);
 
         $old = $admin->toArray();
@@ -82,6 +94,7 @@ class AdminUserController extends Controller
 
     public function destroy(User $admin)
     {
+        $this->resolveClubAdmin($admin);
         ActivityLog::log('delete', $admin, 'تم حذف الإداري: ' . $admin->name);
         $admin->delete();
 
@@ -90,6 +103,7 @@ class AdminUserController extends Controller
 
     public function toggleStatus(User $admin)
     {
+        $this->resolveClubAdmin($admin);
         $admin->update(['is_active' => !$admin->is_active]);
         $status = $admin->is_active ? 'تفعيل' : 'تعطيل';
         ActivityLog::log('toggle_status', $admin, "تم {$status} الإداري: " . $admin->name);
@@ -99,6 +113,7 @@ class AdminUserController extends Controller
 
     public function resetPassword(Request $request, User $admin)
     {
+        $this->resolveClubAdmin($admin);
         $request->validate(['password' => ['required', Password::defaults()]]);
         $admin->update(['password' => Hash::make($request->password)]);
         ActivityLog::log('reset_password', $admin, 'تم إعادة تعيين كلمة المرور للإداري: ' . $admin->name);

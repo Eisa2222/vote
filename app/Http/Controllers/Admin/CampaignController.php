@@ -54,7 +54,7 @@ class CampaignController extends Controller
         $validated['show_countdown'] = $request->has('show_countdown');
         $validated['allow_review_before_submit'] = $request->has('allow_review_before_submit');
 
-        $campaign = DB::transaction(function () use ($validated, $request) {
+        $campaign = DB::transaction(function () use ($validated) {
             $targetClubs = $validated['target_clubs'] ?? [];
             unset($validated['target_clubs']);
 
@@ -118,7 +118,6 @@ class CampaignController extends Controller
 
             $campaign->update($validated);
 
-            // Update targets
             $campaign->targets()->delete();
             if ($validated['target_audience'] === 'all') {
                 foreach (Club::active()->pluck('id') as $clubId) {
@@ -163,7 +162,7 @@ class CampaignController extends Controller
         $validated['is_required'] = $request->has('is_required');
         $validated['sort_order'] = $campaign->questions()->max('sort_order') + 1;
 
-        $question = DB::transaction(function () use ($campaign, $validated) {
+        DB::transaction(function () use ($campaign, $validated) {
             $options = $validated['options'] ?? [];
             unset($validated['options']);
 
@@ -176,8 +175,6 @@ class CampaignController extends Controller
                     'sort_order' => $i + 1,
                 ]);
             }
-
-            return $question;
         });
 
         return redirect()->route('admin.campaigns.questions', $campaign)->with('success', 'تم إضافة السؤال بنجاح');
@@ -185,6 +182,11 @@ class CampaignController extends Controller
 
     public function updateQuestion(Request $request, VotingCampaign $campaign, VotingQuestion $question)
     {
+        // Verify question belongs to this campaign
+        if ($question->campaign_id !== $campaign->id) {
+            abort(404);
+        }
+
         $validated = $request->validate([
             'title' => 'required|string|max:255',
             'description' => 'nullable|string',
@@ -217,6 +219,11 @@ class CampaignController extends Controller
 
     public function destroyQuestion(VotingCampaign $campaign, VotingQuestion $question)
     {
+        // Verify question belongs to this campaign
+        if ($question->campaign_id !== $campaign->id) {
+            abort(404);
+        }
+
         $question->delete();
         return redirect()->route('admin.campaigns.questions', $campaign)->with('success', 'تم حذف السؤال بنجاح');
     }
@@ -236,8 +243,10 @@ class CampaignController extends Controller
     public function send(VotingCampaign $campaign)
     {
         $campaign->load('targets.club');
+        $targetClubIds = $campaign->targets->pluck('club_id');
+
         $admins = User::role('club-admin')
-            ->whereIn('club_id', $campaign->targets->pluck('club_id'))
+            ->whereIn('club_id', $targetClubIds)
             ->with('club')
             ->get();
 
@@ -253,7 +262,14 @@ class CampaignController extends Controller
             'admin_ids.*' => 'exists:users,id',
         ]);
 
-        foreach ($request->admin_ids as $adminId) {
+        // Only allow club-admins whose clubs are targeted by this campaign
+        $targetClubIds = $campaign->targets()->pluck('club_id');
+        $validAdminIds = User::role('club-admin')
+            ->whereIn('club_id', $targetClubIds)
+            ->whereIn('id', $request->admin_ids)
+            ->pluck('id');
+
+        foreach ($validAdminIds as $adminId) {
             $admin = User::find($adminId);
             CampaignAssignment::firstOrCreate(
                 ['campaign_id' => $campaign->id, 'admin_id' => $adminId],
@@ -269,7 +285,7 @@ class CampaignController extends Controller
             $campaign->update(['status' => 'active']);
         }
 
-        ActivityLog::log('send', $campaign, 'تم إرسال الحملة إلى ' . count($request->admin_ids) . ' إداري');
+        ActivityLog::log('send', $campaign, 'تم إرسال الحملة إلى ' . $validAdminIds->count() . ' إداري');
 
         return redirect()->route('admin.campaigns.index')->with('success', 'تم إرسال الحملة للإداريين بنجاح');
     }

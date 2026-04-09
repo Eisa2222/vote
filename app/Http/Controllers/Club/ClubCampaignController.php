@@ -99,6 +99,11 @@ class ClubCampaignController extends Controller
             ->where('club_id', $clubId)
             ->firstOrFail();
 
+        // Enforce results_visible_after for club admins
+        if ($campaign->results_visible_after && $campaign->results_visible_after->isFuture()) {
+            return back()->with('error', 'النتائج غير متاحة حالياً. ستكون متاحة بعد: ' . $campaign->results_visible_after->format('Y-m-d H:i'));
+        }
+
         $campaign->load('questions.options');
         $stats = $this->votingService->getCampaignStats($campaign, $clubId);
 

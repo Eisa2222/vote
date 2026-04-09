@@ -4,7 +4,6 @@ namespace App\Http\Controllers\Voting;
 
 use App\Http\Controllers\Controller;
 use App\Models\VotingLink;
-use App\Models\VotingQuestion;
 use App\Services\VotingService;
 use Illuminate\Http\Request;
 
@@ -46,25 +45,18 @@ class PublicVotingController extends Controller
             return redirect()->route('vote.show', $token);
         }
 
+        // If review is disabled, go straight to submit
+        if (!$link->campaign->allow_review_before_submit) {
+            return $this->submit($request, $token);
+        }
+
         $campaign = $link->campaign;
         $questions = $campaign->questions()->active()->with('options')->orderBy('sort_order')->get();
 
-        // Validate answers
-        $rules = [];
-        foreach ($questions as $question) {
-            $key = "answers.{$question->id}";
-            if ($question->is_required) {
-                $rules[$key] = 'required';
-            }
-            if ($question->type === 'checkbox' && $question->max_selections) {
-                $rules[$key] = ($question->is_required ? 'required|' : 'nullable|') . "array|max:{$question->max_selections}";
-            }
-        }
-
-        $validated = $request->validate($rules);
+        $rules = $this->buildValidationRules($questions);
+        $request->validate($rules);
         $answers = $request->input('answers', []);
 
-        // Build review data
         $reviewData = [];
         foreach ($questions as $question) {
             $answer = $answers[$question->id] ?? null;
@@ -81,7 +73,7 @@ class PublicVotingController extends Controller
             $reviewData[] = [
                 'question' => $question,
                 'answer' => $answer,
-                'display' => $displayAnswer,
+                'display' => $displayAnswer ?: 'لم تتم الإجابة',
             ];
         }
 
@@ -100,18 +92,7 @@ class PublicVotingController extends Controller
 
         $questions = $link->campaign->questions()->active()->get();
 
-        // Validate
-        $rules = [];
-        foreach ($questions as $question) {
-            $key = "answers.{$question->id}";
-            if ($question->is_required) {
-                $rules[$key] = 'required';
-            }
-            if ($question->type === 'checkbox' && $question->max_selections) {
-                $rules[$key] = ($question->is_required ? 'required|' : 'nullable|') . "array|max:{$question->max_selections}";
-            }
-        }
-
+        $rules = $this->buildValidationRules($questions);
         $request->validate($rules);
 
         $this->votingService->submitVote(
@@ -122,5 +103,20 @@ class PublicVotingController extends Controller
         );
 
         return view('voting.success', ['player' => $link->player, 'campaign' => $link->campaign]);
+    }
+
+    private function buildValidationRules($questions): array
+    {
+        $rules = [];
+        foreach ($questions as $question) {
+            $key = "answers.{$question->id}";
+            if ($question->is_required) {
+                $rules[$key] = 'required';
+            }
+            if ($question->type === 'checkbox' && $question->max_selections) {
+                $rules[$key] = ($question->is_required ? 'required|' : 'nullable|') . "array|max:{$question->max_selections}";
+            }
+        }
+        return $rules;
     }
 }
