@@ -7,12 +7,16 @@ use App\Models\ActivityLog;
 use App\Models\CampaignAssignment;
 use App\Models\VotingCampaign;
 use App\Models\VotingLink;
+use App\Services\SmsService;
 use App\Services\VotingService;
 use Illuminate\Http\Request;
 
 class ClubCampaignController extends Controller
 {
-    public function __construct(private VotingService $votingService) {}
+    public function __construct(
+        private VotingService $votingService,
+        private SmsService $smsService,
+    ) {}
 
     public function index()
     {
@@ -70,6 +74,7 @@ class ClubCampaignController extends Controller
     public function sendLinks(Request $request, VotingCampaign $campaign)
     {
         $clubId = auth()->user()->club_id;
+        $sendMethod = $request->input('send_method', 'manual'); // manual, sms, email, both
 
         $query = VotingLink::where('campaign_id', $campaign->id)
             ->where('club_id', $clubId)
@@ -83,26 +88,41 @@ class ClubCampaignController extends Controller
 
         $links = $query->get();
         $sentCount = 0;
+        $smsCount = 0;
+        $emailCount = 0;
 
         foreach ($links as $link) {
             $link->update(['status' => 'sent', 'sent_at' => now()]);
+            $url = route('vote.show', $link->token);
 
-            // Send email if player has email
-            if ($link->player && $link->player->email) {
+            // Send SMS
+            if (in_array($sendMethod, ['sms', 'both']) && $link->player?->phone) {
+                $smsMessage = "دعوة تصويت: {$campaign->title}\nصوّت من خلال الرابط:\n{$url}";
+                $this->smsService->send($link->player->phone, $smsMessage);
+                $smsCount++;
+            }
+
+            // Send Email
+            if (in_array($sendMethod, ['email', 'both']) && $link->player?->email) {
                 try {
                     \Illuminate\Support\Facades\Notification::route('mail', $link->player->email)
                         ->notify(new \App\Notifications\VotingLinkNotification($link));
+                    $emailCount++;
                 } catch (\Exception $e) {
-                    // Log but don't block
+                    // Log silently
                 }
             }
 
             $sentCount++;
         }
 
-        ActivityLog::log('send_links', $campaign, "تم إرسال {$sentCount} رابط تصويت");
+        $details = "تم إرسال {$sentCount} رابط";
+        if ($smsCount > 0) $details .= " | SMS: {$smsCount}";
+        if ($emailCount > 0) $details .= " | بريد: {$emailCount}";
 
-        return back()->with('success', "تم إرسال {$sentCount} رابط تصويت للاعبين");
+        ActivityLog::log('send_links', $campaign, $details);
+
+        return back()->with('success', $details);
     }
 
     public function results(VotingCampaign $campaign)

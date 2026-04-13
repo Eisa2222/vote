@@ -54,6 +54,36 @@
 
     <div class="col-md-6">
         <div class="card border-0 shadow-sm">
+            <div class="card-header bg-white"><h6 class="mb-0"><i class="bi bi-phone text-success"></i> بوابة SMS</h6></div>
+            <div class="card-body">
+                <table class="table table-borderless mb-0">
+                    <tr><td class="text-muted" width="180">المزود</td><td>
+                        @php $smsProvider = config('sms.provider', 'log'); @endphp
+                        @if($smsProvider === 'log')
+                            <span class="badge bg-warning">وضع التطوير (Log)</span>
+                        @else
+                            <span class="badge bg-success">{{ strtoupper($smsProvider) }}</span>
+                        @endif
+                    </td></tr>
+                    <tr><td class="text-muted">اسم المرسل</td><td>{{ config('sms.sender_name') }}</td></tr>
+                    <tr><td class="text-muted">الحالة</td><td>
+                        @if($smsProvider !== 'log')
+                            <span class="badge bg-success">مفعّل</span>
+                        @else
+                            <span class="badge bg-secondary">تطوير</span>
+                        @endif
+                    </td></tr>
+                </table>
+                <div class="alert alert-light small mt-2 mb-0">
+                    <strong>البوابات المدعومة:</strong> Taqnyat, Unifonic, Msegat<br>
+                    <strong>للتفعيل:</strong> عدّل <code>SMS_PROVIDER</code> و مفاتيح API في ملف <code>.env</code>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-6">
+        <div class="card border-0 shadow-sm">
             <div class="card-header bg-white"><h6 class="mb-0"><i class="bi bi-shield-lock text-danger"></i> الأمان</h6></div>
             <div class="card-body">
                 <table class="table table-borderless mb-0">

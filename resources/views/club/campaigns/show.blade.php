@@ -79,13 +79,41 @@
 
 <!-- Voting Links -->
 <div class="card border-0 shadow-sm">
-    <div class="card-header bg-white d-flex justify-content-between align-items-center">
-        <h6 class="mb-0">روابط التصويت</h6>
+    <div class="card-header bg-white">
+        <div class="d-flex justify-content-between align-items-center">
+            <h6 class="mb-0">روابط التصويت</h6>
+            @if($links->where('status', 'pending')->count() > 0)
+            <button class="btn btn-sm btn-success" data-bs-toggle="collapse" data-bs-target="#sendOptions">
+                <i class="bi bi-send"></i> إرسال الروابط ({{ $links->where('status', 'pending')->count() }})
+            </button>
+            @endif
+        </div>
         @if($links->where('status', 'pending')->count() > 0)
-        <form method="POST" action="{{ route('club.campaigns.send-links', $campaign) }}">
-            @csrf
-            <button type="submit" class="btn btn-sm btn-success"><i class="bi bi-send"></i> تحديث حالة الكل لـ "مُرسل"</button>
-        </form>
+        <div class="collapse mt-3" id="sendOptions">
+            <form method="POST" action="{{ route('club.campaigns.send-links', $campaign) }}">
+                @csrf
+                <div class="row g-2 align-items-end">
+                    <div class="col-md-5">
+                        <label class="form-label small fw-bold">طريقة الإرسال</label>
+                        <select name="send_method" class="form-select form-select-sm">
+                            <option value="manual">يدوي - نسخ الروابط فقط</option>
+                            <option value="sms">SMS رسالة نصية</option>
+                            <option value="email">بريد إلكتروني</option>
+                            <option value="both">SMS + بريد إلكتروني</option>
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <button type="submit" class="btn btn-success btn-sm w-100">
+                            <i class="bi bi-send-fill"></i> إرسال الآن
+                        </button>
+                    </div>
+                </div>
+                <small class="text-muted mt-1 d-block">
+                    <i class="bi bi-info-circle"></i>
+                    SMS يرسل للاعبين الذين لديهم رقم جوال، البريد يرسل للذين لديهم بريد إلكتروني
+                </small>
+            </form>
+        </div>
         @endif
     </div>
     <div class="card-body p-0">
