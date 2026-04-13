@@ -8,6 +8,7 @@ use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\ExportController;
 use App\Http\Controllers\Admin\LeagueController;
 use App\Http\Controllers\Admin\PlayerController;
+use App\Http\Controllers\Admin\WorkflowController;
 use App\Http\Controllers\Club\ClubCampaignController;
 use App\Http\Controllers\Club\ClubDashboardController;
 use App\Http\Controllers\Club\ClubPlayerController;
@@ -104,6 +105,18 @@ Route::middleware(['auth', 'role:super-admin'])->prefix('admin')->name('admin.')
     // Settings
     Route::get('/settings', function () { return view('admin.settings'); })->name('settings');
 });
+
+// Workflow Routes (accessible by association roles)
+Route::middleware(['auth', 'role:super-admin|campaign-creator|campaign-reviewer|campaign-approver'])
+    ->prefix('admin/workflow')->name('admin.workflow.')->group(function () {
+        Route::get('/', [WorkflowController::class, 'index'])->name('index');
+        Route::get('/{campaign}', [WorkflowController::class, 'show'])->name('show');
+        Route::post('/{campaign}/submit-review', [WorkflowController::class, 'submitForReview'])->name('submit-review');
+        Route::post('/{campaign}/approve-review', [WorkflowController::class, 'approveReview'])->name('approve-review');
+        Route::post('/{campaign}/reject-review', [WorkflowController::class, 'rejectReview'])->name('reject-review');
+        Route::post('/{campaign}/approve-final', [WorkflowController::class, 'approveFinal'])->name('approve-final');
+        Route::post('/{campaign}/reject-final', [WorkflowController::class, 'rejectFinal'])->name('reject-final');
+    });
 
 // Club Admin Routes
 Route::middleware(['auth', 'role:club-admin', 'club.access'])->prefix('club')->name('club.')->group(function () {

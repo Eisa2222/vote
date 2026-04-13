@@ -66,6 +66,26 @@
                 </a>
             @endif
 
+            @if(auth()->user()->hasAnyRole(['super-admin', 'campaign-creator', 'campaign-reviewer', 'campaign-approver']))
+                @unless(auth()->user()->hasRole('super-admin'))
+                    <a href="{{ route('admin.workflow.index') }}" class="nav-link {{ request()->routeIs('admin.workflow.*') ? 'active' : '' }}">
+                        <i class="bi bi-speedometer2"></i> لوحة التحكم
+                    </a>
+                @endunless
+                <a href="{{ route('admin.workflow.index') }}" class="nav-link {{ request()->routeIs('admin.workflow.*') ? 'active' : '' }}">
+                    <i class="bi bi-diagram-3"></i> سير العمل
+                    @php
+                        $wfCount = \App\Models\VotingCampaign::whereIn('workflow_status', ['pending_review', 'pending_approval'])->count();
+                    @endphp
+                    @if($wfCount > 0) <span class="badge bg-danger rounded-pill ms-1">{{ $wfCount }}</span> @endif
+                </a>
+                @if(auth()->user()->hasAnyRole(['super-admin', 'campaign-creator']))
+                <a href="{{ route('admin.campaigns.index') }}" class="nav-link {{ request()->routeIs('admin.campaigns.*') ? 'active' : '' }}">
+                    <i class="bi bi-megaphone"></i> حملات التصويت
+                </a>
+                @endif
+            @endif
+
             @if(auth()->user()->hasRole('club-admin'))
                 <a href="{{ route('club.dashboard') }}" class="nav-link {{ request()->routeIs('club.dashboard') ? 'active' : '' }}">
                     <i class="bi bi-speedometer2"></i> لوحة التحكم

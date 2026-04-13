@@ -12,13 +12,16 @@
         <div class="table-responsive">
             <table class="table table-hover mb-0">
                 <thead>
-                    <tr><th>#</th><th>العنوان</th><th>الحالة</th><th>الأسئلة</th><th>الروابط</th><th>الأصوات</th><th>البداية</th><th>النهاية</th><th>الإجراءات</th></tr>
+                    <tr><th>#</th><th>العنوان</th><th>سير العمل</th><th>الحالة</th><th>الأسئلة</th><th>الروابط</th><th>الأصوات</th><th>البداية</th><th>النهاية</th><th>الإجراءات</th></tr>
                 </thead>
                 <tbody>
                     @forelse($campaigns as $campaign)
                     <tr>
                         <td>{{ $campaign->id }}</td>
                         <td>{{ $campaign->title }}</td>
+                        <td>
+                            <span class="badge bg-{{ $campaign->workflow_status_color }}">{{ $campaign->workflow_status_label }}</span>
+                        </td>
                         <td>
                             @switch($campaign->status)
                                 @case('draft') <span class="badge bg-secondary">مسودة</span> @break

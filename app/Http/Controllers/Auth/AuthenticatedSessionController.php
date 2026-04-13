@@ -34,6 +34,10 @@ class AuthenticatedSessionController extends Controller
             return redirect()->intended(route('admin.dashboard'));
         }
 
+        if ($user->hasAnyRole(['campaign-creator', 'campaign-reviewer', 'campaign-approver'])) {
+            return redirect()->intended(route('admin.workflow.index'));
+        }
+
         if ($user->hasRole('club-admin')) {
             return redirect()->intended(route('club.dashboard'));
         }

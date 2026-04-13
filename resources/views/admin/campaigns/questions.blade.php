@@ -8,7 +8,16 @@
         <p class="text-muted mb-0">{{ $campaign->title }}</p>
     </div>
     <div>
-        <a href="{{ route('admin.campaigns.send', $campaign) }}" class="btn btn-success"><i class="bi bi-send"></i> إرسال الحملة</a>
+        @if($campaign->workflow_status === 'draft' || $campaign->workflow_status === 'rejected')
+            <form method="POST" action="{{ route('admin.workflow.submit-review', $campaign) }}" class="d-inline">
+                @csrf
+                <button class="btn btn-warning"><i class="bi bi-send-check"></i> تقديم للمراجعة</button>
+            </form>
+        @elseif($campaign->workflow_status === 'approved')
+            <a href="{{ route('admin.campaigns.send', $campaign) }}" class="btn btn-success"><i class="bi bi-send"></i> إرسال الحملة</a>
+        @else
+            <a href="{{ route('admin.workflow.show', $campaign) }}" class="btn btn-info"><i class="bi bi-diagram-3"></i> {{ $campaign->workflow_status_label }}</a>
+        @endif
         <a href="{{ route('admin.campaigns.index') }}" class="btn btn-outline-secondary">رجوع</a>
     </div>
 </div>

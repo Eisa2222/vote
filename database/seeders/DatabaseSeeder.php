@@ -53,6 +53,25 @@ class DatabaseSeeder extends Seeder
             'view-club-results',
         ]);
 
+        // Association roles
+        $campaignCreator = Role::firstOrCreate(['name' => 'campaign-creator']);
+        $campaignCreator->syncPermissions([
+            'manage-campaigns', 'view-campaigns',
+            'manage-questions', 'view-questions',
+            'view-clubs', 'view-players',
+        ]);
+
+        $campaignReviewer = Role::firstOrCreate(['name' => 'campaign-reviewer']);
+        $campaignReviewer->syncPermissions([
+            'view-campaigns', 'view-questions', 'view-clubs', 'view-players',
+        ]);
+
+        $campaignApprover = Role::firstOrCreate(['name' => 'campaign-approver']);
+        $campaignApprover->syncPermissions([
+            'view-campaigns', 'view-questions', 'view-clubs', 'view-players',
+            'send-campaigns', 'view-all-results',
+        ]);
+
         // Create Super Admin User
         $superAdminUser = User::firstOrCreate(
             ['email' => 'admin@sportsvoting.com'],
@@ -64,6 +83,42 @@ class DatabaseSeeder extends Seeder
             ]
         );
         $superAdminUser->assignRole('super-admin');
+
+        // Create Campaign Creator
+        $creatorUser = User::firstOrCreate(
+            ['email' => 'creator@sportsvoting.com'],
+            [
+                'name' => 'منشئ التصويت',
+                'password' => Hash::make('password'),
+                'is_active' => true,
+                'email_verified_at' => now(),
+            ]
+        );
+        $creatorUser->assignRole('campaign-creator');
+
+        // Create Campaign Reviewer
+        $reviewerUser = User::firstOrCreate(
+            ['email' => 'reviewer@sportsvoting.com'],
+            [
+                'name' => 'مراجع التصويت',
+                'password' => Hash::make('password'),
+                'is_active' => true,
+                'email_verified_at' => now(),
+            ]
+        );
+        $reviewerUser->assignRole('campaign-reviewer');
+
+        // Create Campaign Approver
+        $approverUser = User::firstOrCreate(
+            ['email' => 'approver@sportsvoting.com'],
+            [
+                'name' => 'معتمد التصويت',
+                'password' => Hash::make('password'),
+                'is_active' => true,
+                'email_verified_at' => now(),
+            ]
+        );
+        $approverUser->assignRole('campaign-approver');
 
         // Create Demo Leagues
         $league1 = League::firstOrCreate(
