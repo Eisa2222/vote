@@ -28,6 +28,13 @@
                     <input type="datetime-local" name="ends_at" class="form-control" value="{{ old('ends_at') }}">
                 </div>
                 <div class="col-md-6">
+                    <label class="form-label">نوع التصويت <span class="text-danger">*</span></label>
+                    <select name="voting_type" class="form-select" required>
+                        <option value="public" {{ old('voting_type') == 'public' ? 'selected' : '' }}>تصويت عام - النتائج مرئية لجميع الأندية</option>
+                        <option value="private" {{ old('voting_type') == 'private' ? 'selected' : '' }}>تصويت خاص - النتائج مرئية للجمعية فقط</option>
+                    </select>
+                </div>
+                <div class="col-md-6">
                     <label class="form-label">الجمهور المستهدف <span class="text-danger">*</span></label>
                     <select name="target_audience" class="form-select" id="targetAudience" required>
                         <option value="all" {{ old('target_audience') == 'all' ? 'selected' : '' }}>جميع الأندية</option>

@@ -38,6 +38,13 @@
                     </select>
                 </div>
                 <div class="col-md-6">
+                    <label class="form-label">نوع التصويت</label>
+                    <select name="voting_type" class="form-select">
+                        <option value="public" {{ $campaign->voting_type == 'public' ? 'selected' : '' }}>تصويت عام</option>
+                        <option value="private" {{ $campaign->voting_type == 'private' ? 'selected' : '' }}>تصويت خاص</option>
+                    </select>
+                </div>
+                <div class="col-md-6">
                     <label class="form-label">الجمهور المستهدف</label>
                     <select name="target_audience" class="form-select" id="targetAudience" required>
                         <option value="all" {{ $campaign->target_audience == 'all' ? 'selected' : '' }}>جميع الأندية</option>

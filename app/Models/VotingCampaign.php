@@ -16,6 +16,7 @@ class VotingCampaign extends Model
         'starts_at',
         'ends_at',
         'status',
+        'voting_type',
         'target_audience',
         'single_response',
         'prevent_edit_after_submit',

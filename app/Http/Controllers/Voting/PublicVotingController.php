@@ -11,10 +11,13 @@ class PublicVotingController extends Controller
 {
     public function __construct(private VotingService $votingService) {}
 
+    /**
+     * Step 1: Landing page - show verification form
+     */
     public function show(string $token)
     {
         $link = VotingLink::where('token', $token)
-            ->with(['campaign.questions.options', 'player', 'club'])
+            ->with(['campaign', 'player', 'club'])
             ->first();
 
         if (!$link) {
@@ -29,12 +32,49 @@ class PublicVotingController extends Controller
             return view('voting.expired', ['campaign' => $link->campaign]);
         }
 
+        return view('voting.verify', [
+            'token' => $token,
+            'campaign' => $link->campaign,
+            'club' => $link->club,
+        ]);
+    }
+
+    /**
+     * Step 2: Verify identity then show voting form
+     */
+    public function verify(Request $request, string $token)
+    {
+        $request->validate([
+            'national_id' => 'required|string',
+        ], [
+            'national_id.required' => 'يرجى إدخال رقم الهوية أو رقم الجوال للتحقق.',
+        ]);
+
+        $link = VotingLink::where('token', $token)
+            ->with(['campaign.questions.options', 'player', 'club'])
+            ->firstOrFail();
+
+        if (!$link->isValid()) {
+            return redirect()->route('vote.show', $token);
+        }
+
+        // Verify identity: match national_id OR phone
+        $input = $request->input('national_id');
+        $player = $link->player;
+
+        if ($player->national_id !== $input && $player->phone !== $input) {
+            return back()->withErrors(['national_id' => 'بيانات التحقق غير صحيحة. تأكد من رقم الهوية أو رقم الجوال.']);
+        }
+
         $campaign = $link->campaign;
         $questions = $campaign->questions()->active()->with('options')->orderBy('sort_order')->get();
 
-        return view('voting.form', compact('link', 'campaign', 'questions'));
+        return view('voting.form', compact('link', 'campaign', 'questions', 'token'));
     }
 
+    /**
+     * Step 3: Review answers before submission
+     */
     public function review(Request $request, string $token)
     {
         $link = VotingLink::where('token', $token)
@@ -45,7 +85,6 @@ class PublicVotingController extends Controller
             return redirect()->route('vote.show', $token);
         }
 
-        // If review is disabled, go straight to submit
         if (!$link->campaign->allow_review_before_submit) {
             return $this->submit($request, $token);
         }
@@ -80,6 +119,9 @@ class PublicVotingController extends Controller
         return view('voting.review', compact('link', 'campaign', 'reviewData', 'answers'));
     }
 
+    /**
+     * Step 4: Submit vote
+     */
     public function submit(Request $request, string $token)
     {
         $link = VotingLink::where('token', $token)

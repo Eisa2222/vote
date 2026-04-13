@@ -17,6 +17,7 @@ use Illuminate\Support\Facades\Route;
 
 // Public Voting Routes
 Route::get('/vote/{token}', [PublicVotingController::class, 'show'])->name('vote.show');
+Route::post('/vote/{token}/verify', [PublicVotingController::class, 'verify'])->name('vote.verify');
 Route::post('/vote/{token}/review', [PublicVotingController::class, 'review'])->name('vote.review');
 Route::post('/vote/{token}/submit', [PublicVotingController::class, 'submit'])->name('vote.submit');
 
@@ -93,6 +94,9 @@ Route::middleware(['auth', 'role:super-admin'])->prefix('admin')->name('admin.')
 
     // Audit Logs
     Route::get('/audit-logs', [AuditLogController::class, 'index'])->name('audit-logs.index');
+
+    // Settings
+    Route::get('/settings', function () { return view('admin.settings'); })->name('settings');
 });
 
 // Club Admin Routes
@@ -110,6 +114,11 @@ Route::middleware(['auth', 'role:club-admin', 'club.access'])->prefix('club')->n
     Route::post('/campaigns/{campaign}/generate-links', [ClubCampaignController::class, 'generateLinks'])->name('campaigns.generate-links');
     Route::post('/campaigns/{campaign}/send-links', [ClubCampaignController::class, 'sendLinks'])->name('campaigns.send-links');
     Route::get('/campaigns/{campaign}/results', [ClubCampaignController::class, 'results'])->name('campaigns.results');
+
+    // Club Profile
+    Route::get('/profile', function () {
+        return view('club.profile');
+    })->name('profile');
 });
 
 require __DIR__.'/auth.php';

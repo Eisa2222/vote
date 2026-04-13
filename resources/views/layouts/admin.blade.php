@@ -61,6 +61,9 @@
                 <a href="{{ route('admin.audit-logs.index') }}" class="nav-link {{ request()->routeIs('admin.audit-logs.*') ? 'active' : '' }}">
                     <i class="bi bi-clock-history"></i> سجل العمليات
                 </a>
+                <a href="{{ route('admin.settings') }}" class="nav-link {{ request()->routeIs('admin.settings') ? 'active' : '' }}">
+                    <i class="bi bi-gear"></i> الإعدادات
+                </a>
             @endif
 
             @if(auth()->user()->hasRole('club-admin'))
@@ -72,6 +75,9 @@
                 </a>
                 <a href="{{ route('club.campaigns.index') }}" class="nav-link {{ request()->routeIs('club.campaigns.*') ? 'active' : '' }}">
                     <i class="bi bi-megaphone"></i> حملات التصويت
+                </a>
+                <a href="{{ route('club.profile') }}" class="nav-link {{ request()->routeIs('club.profile') ? 'active' : '' }}">
+                    <i class="bi bi-building"></i> ملف النادي
                 </a>
             @endif
 

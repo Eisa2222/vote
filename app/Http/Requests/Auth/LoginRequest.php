@@ -50,6 +50,14 @@ class LoginRequest extends FormRequest
             ]);
         }
 
+        // Block disabled accounts
+        if (! Auth::user()->is_active) {
+            Auth::logout();
+            throw ValidationException::withMessages([
+                'email' => 'حسابك معطل. تواصل مع الإدارة.',
+            ]);
+        }
+
         RateLimiter::clear($this->throttleKey());
     }
 

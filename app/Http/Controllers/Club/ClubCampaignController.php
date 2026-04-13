@@ -71,24 +71,38 @@ class ClubCampaignController extends Controller
     {
         $clubId = auth()->user()->club_id;
 
-        $linkIds = $request->input('link_ids', []);
-
         $query = VotingLink::where('campaign_id', $campaign->id)
             ->where('club_id', $clubId)
-            ->where('status', 'pending');
+            ->where('status', 'pending')
+            ->with('player');
 
+        $linkIds = $request->input('link_ids', []);
         if (!empty($linkIds)) {
             $query->whereIn('id', $linkIds);
         }
 
-        $updated = $query->update([
-            'status' => 'sent',
-            'sent_at' => now(),
-        ]);
+        $links = $query->get();
+        $sentCount = 0;
 
-        ActivityLog::log('send_links', $campaign, "تم إرسال {$updated} رابط تصويت");
+        foreach ($links as $link) {
+            $link->update(['status' => 'sent', 'sent_at' => now()]);
 
-        return back()->with('success', "تم تحديث حالة {$updated} رابط إلى مُرسل");
+            // Send email if player has email
+            if ($link->player && $link->player->email) {
+                try {
+                    \Illuminate\Support\Facades\Notification::route('mail', $link->player->email)
+                        ->notify(new \App\Notifications\VotingLinkNotification($link));
+                } catch (\Exception $e) {
+                    // Log but don't block
+                }
+            }
+
+            $sentCount++;
+        }
+
+        ActivityLog::log('send_links', $campaign, "تم إرسال {$sentCount} رابط تصويت");
+
+        return back()->with('success', "تم إرسال {$sentCount} رابط تصويت للاعبين");
     }
 
     public function results(VotingCampaign $campaign)
@@ -98,6 +112,11 @@ class ClubCampaignController extends Controller
         CampaignAssignment::where('campaign_id', $campaign->id)
             ->where('club_id', $clubId)
             ->firstOrFail();
+
+        // Private voting: results visible to super admin only
+        if ($campaign->voting_type === 'private') {
+            return back()->with('error', 'هذا تصويت خاص - النتائج مرئية للجمعية فقط.');
+        }
 
         // Enforce results_visible_after for club admins
         if ($campaign->results_visible_after && $campaign->results_visible_after->isFuture()) {
