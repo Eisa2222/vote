@@ -40,7 +40,7 @@
                 للتحقق من هويتك، يرجى إدخال <strong>رقم الهوية</strong> أو <strong>رقم الجوال</strong> المسجل لدى النادي.
             </div>
 
-            <form method="POST" action="{{ route('vote.verify', $token) }}">
+            <form method="POST" action="{{ ($mode ?? 'individual') === 'shared' ? route('vote.shared.verify', $token) : route('vote.verify', $token) }}">
                 @csrf
                 <div class="mb-4">
                     <label class="form-label fw-bold text-center d-block">رقم الهوية أو رقم الجوال</label>

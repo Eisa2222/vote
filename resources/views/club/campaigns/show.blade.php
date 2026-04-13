@@ -10,8 +10,27 @@
     <div>
         <form method="POST" action="{{ route('club.campaigns.generate-links', $campaign) }}" class="d-inline">
             @csrf
-            <button type="submit" class="btn btn-primary"><i class="bi bi-link-45deg"></i> توليد روابط التصويت</button>
+            <button type="submit" class="btn btn-outline-primary"><i class="bi bi-link-45deg"></i> توليد روابط فردية</button>
         </form>
+    </div>
+</div>
+
+<!-- Shared Link -->
+<div class="card border-0 shadow-sm mb-4 border-primary" style="border-top: 3px solid #0d6efd !important;">
+    <div class="card-body">
+        <div class="d-flex align-items-center justify-content-between">
+            <div>
+                <h6 class="mb-1"><i class="bi bi-link-45deg text-primary"></i> رابط التصويت الموحّد</h6>
+                <p class="text-muted small mb-0">رابط واحد يُرسل لجميع لاعبي النادي - كل لاعب يُحدَّد تلقائياً عند إدخال هويته</p>
+            </div>
+        </div>
+        <div class="input-group mt-3">
+            <input type="text" class="form-control" value="{{ $assignment->shared_url }}" readonly id="sharedLink">
+            <button class="btn btn-primary" onclick="navigator.clipboard.writeText(document.getElementById('sharedLink').value); this.innerHTML='<i class=\'bi bi-check\'></i> تم النسخ'; setTimeout(()=>this.innerHTML='<i class=\'bi bi-clipboard\'></i> نسخ', 2000);">
+                <i class="bi bi-clipboard"></i> نسخ
+            </button>
+        </div>
+        <small class="text-success mt-2 d-block"><i class="bi bi-check-circle"></i> أرسل هذا الرابط لجميع اللاعبين عبر واتساب أو SMS</small>
     </div>
 </div>
 

@@ -15,9 +15,15 @@ use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\Voting\PublicVotingController;
 use Illuminate\Support\Facades\Route;
 
-// Public Voting Routes
+// Shared Voting Link (رابط واحد لجميع لاعبي النادي)
+Route::get('/vote/s/{token}', [PublicVotingController::class, 'shared'])->name('vote.shared');
+Route::post('/vote/s/{token}/verify', [PublicVotingController::class, 'sharedVerify'])->name('vote.shared.verify');
+
+// Individual Voting Link (رابط فردي لكل لاعب)
 Route::get('/vote/{token}', [PublicVotingController::class, 'show'])->name('vote.show');
 Route::post('/vote/{token}/verify', [PublicVotingController::class, 'verify'])->name('vote.verify');
+
+// Shared: Review & Submit (both flows use player's individual token)
 Route::post('/vote/{token}/review', [PublicVotingController::class, 'review'])->name('vote.review');
 Route::post('/vote/{token}/submit', [PublicVotingController::class, 'submit'])->name('vote.submit');
 
