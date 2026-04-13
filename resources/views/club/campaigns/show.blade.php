@@ -21,16 +21,30 @@
         <div class="d-flex align-items-center justify-content-between">
             <div>
                 <h6 class="mb-1"><i class="bi bi-link-45deg text-primary"></i> رابط التصويت الموحّد</h6>
-                <p class="text-muted small mb-0">رابط واحد يُرسل لجميع لاعبي النادي - كل لاعب يُحدَّد تلقائياً عند إدخال هويته</p>
+                <p class="text-muted small mb-0">رابط واحد لجميع لاعبي النادي - يُحدَّد كل لاعب تلقائياً عند إدخال هويته</p>
             </div>
         </div>
         <div class="input-group mt-3">
             <input type="text" class="form-control" value="{{ $assignment->shared_url }}" readonly id="sharedLink">
-            <button class="btn btn-primary" onclick="navigator.clipboard.writeText(document.getElementById('sharedLink').value); this.innerHTML='<i class=\'bi bi-check\'></i> تم النسخ'; setTimeout(()=>this.innerHTML='<i class=\'bi bi-clipboard\'></i> نسخ', 2000);">
+            <button class="btn btn-outline-primary" onclick="navigator.clipboard.writeText(document.getElementById('sharedLink').value); this.innerHTML='<i class=\'bi bi-check\'></i> تم'; setTimeout(()=>this.innerHTML='<i class=\'bi bi-clipboard\'></i> نسخ', 2000);">
                 <i class="bi bi-clipboard"></i> نسخ
             </button>
         </div>
-        <small class="text-success mt-2 d-block"><i class="bi bi-check-circle"></i> أرسل هذا الرابط لجميع اللاعبين عبر واتساب أو SMS</small>
+
+        <div class="d-flex gap-2 mt-3">
+            <form method="POST" action="{{ route('club.campaigns.send-shared-sms', $campaign) }}" onsubmit="return confirm('سيتم إرسال رسالة SMS لجميع اللاعبين الذين لديهم رقم جوال ({{ $playersWithPhone }} لاعب). متابعة؟')">
+                @csrf
+                <button type="submit" class="btn btn-success">
+                    <i class="bi bi-phone"></i> إرسال SMS لجميع اللاعبين ({{ $playersWithPhone }})
+                </button>
+            </form>
+            <form method="POST" action="{{ route('club.campaigns.send-shared-email', $campaign) }}" onsubmit="return confirm('سيتم إرسال بريد إلكتروني لجميع اللاعبين الذين لديهم بريد ({{ $playersWithEmail }} لاعب). متابعة؟')">
+                @csrf
+                <button type="submit" class="btn btn-outline-info">
+                    <i class="bi bi-envelope"></i> إرسال بريد ({{ $playersWithEmail }})
+                </button>
+            </form>
+        </div>
     </div>
 </div>
 

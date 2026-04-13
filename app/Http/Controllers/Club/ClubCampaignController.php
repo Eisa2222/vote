@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Club;
 use App\Http\Controllers\Controller;
 use App\Models\ActivityLog;
 use App\Models\CampaignAssignment;
+use App\Models\Player;
 use App\Models\VotingCampaign;
 use App\Models\VotingLink;
 use App\Services\SmsService;
@@ -53,7 +54,10 @@ class ClubCampaignController extends Controller
             ->with('player')
             ->paginate(50);
 
-        return view('club.campaigns.show', compact('campaign', 'assignment', 'stats', 'links'));
+        $playersWithPhone = Player::where('club_id', $clubId)->active()->whereNotNull('phone')->where('phone', '!=', '')->count();
+        $playersWithEmail = Player::where('club_id', $clubId)->active()->whereNotNull('email')->where('email', '!=', '')->count();
+
+        return view('club.campaigns.show', compact('campaign', 'assignment', 'stats', 'links', 'playersWithPhone', 'playersWithEmail'));
     }
 
     public function generateLinks(VotingCampaign $campaign)
@@ -152,5 +156,81 @@ class ClubCampaignController extends Controller
         }
 
         return view('club.campaigns.results', compact('campaign', 'stats', 'questionResults'));
+    }
+
+    /**
+     * Send shared voting link via SMS to all players with phone numbers
+     */
+    public function sendSharedSms(VotingCampaign $campaign)
+    {
+        $clubId = auth()->user()->club_id;
+
+        $assignment = CampaignAssignment::where('campaign_id', $campaign->id)
+            ->where('club_id', $clubId)
+            ->firstOrFail();
+
+        $players = Player::where('club_id', $clubId)
+            ->active()
+            ->whereNotNull('phone')
+            ->where('phone', '!=', '')
+            ->get();
+
+        $url = $assignment->shared_url;
+        $message = "دعوة تصويت: {$campaign->title}\nللمشاركة افتح الرابط وأدخل رقم هويتك:\n{$url}";
+
+        $sent = 0;
+        foreach ($players as $player) {
+            $result = $this->smsService->send($player->phone, $message);
+            if ($result['success']) $sent++;
+        }
+
+        ActivityLog::log('send_shared_sms', $campaign, "تم إرسال الرابط الموحد عبر SMS إلى {$sent} لاعب");
+
+        return back()->with('success', "تم إرسال الرابط الموحد عبر SMS إلى {$sent} لاعب من أصل {$players->count()}");
+    }
+
+    /**
+     * Send shared voting link via Email to all players with email
+     */
+    public function sendSharedEmail(VotingCampaign $campaign)
+    {
+        $clubId = auth()->user()->club_id;
+
+        $assignment = CampaignAssignment::where('campaign_id', $campaign->id)
+            ->where('club_id', $clubId)
+            ->firstOrFail();
+
+        $players = Player::where('club_id', $clubId)
+            ->active()
+            ->whereNotNull('email')
+            ->where('email', '!=', '')
+            ->get();
+
+        $url = $assignment->shared_url;
+        $sent = 0;
+
+        foreach ($players as $player) {
+            try {
+                \Illuminate\Support\Facades\Mail::send([], [], function ($mail) use ($player, $campaign, $url) {
+                    $mail->to($player->email)
+                        ->subject("دعوة تصويت: {$campaign->title}")
+                        ->html("
+                            <div style='direction:rtl;font-family:Arial,sans-serif;padding:20px;'>
+                                <h2>مرحباً {$player->name}</h2>
+                                <p>تم إرسال دعوة تصويت لك في حملة: <strong>{$campaign->title}</strong></p>
+                                <p><a href='{$url}' style='background:#667eea;color:#fff;padding:12px 30px;border-radius:8px;text-decoration:none;display:inline-block;margin:10px 0;'>ابدأ التصويت</a></p>
+                                <p style='color:#888;font-size:13px;'>عند فتح الرابط، أدخل رقم هويتك أو جوالك للتحقق.</p>
+                            </div>
+                        ");
+                });
+                $sent++;
+            } catch (\Exception $e) {
+                // continue
+            }
+        }
+
+        ActivityLog::log('send_shared_email', $campaign, "تم إرسال الرابط الموحد عبر البريد إلى {$sent} لاعب");
+
+        return back()->with('success', "تم إرسال الرابط الموحد عبر البريد إلى {$sent} لاعب من أصل {$players->count()}");
     }
 }

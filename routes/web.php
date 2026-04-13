@@ -119,6 +119,8 @@ Route::middleware(['auth', 'role:club-admin', 'club.access'])->prefix('club')->n
     Route::get('/campaigns/{campaign}', [ClubCampaignController::class, 'show'])->name('campaigns.show');
     Route::post('/campaigns/{campaign}/generate-links', [ClubCampaignController::class, 'generateLinks'])->name('campaigns.generate-links');
     Route::post('/campaigns/{campaign}/send-links', [ClubCampaignController::class, 'sendLinks'])->name('campaigns.send-links');
+    Route::post('/campaigns/{campaign}/send-shared-sms', [ClubCampaignController::class, 'sendSharedSms'])->name('campaigns.send-shared-sms');
+    Route::post('/campaigns/{campaign}/send-shared-email', [ClubCampaignController::class, 'sendSharedEmail'])->name('campaigns.send-shared-email');
     Route::get('/campaigns/{campaign}/results', [ClubCampaignController::class, 'results'])->name('campaigns.results');
 
     // Club Profile
