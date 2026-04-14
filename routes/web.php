@@ -8,6 +8,7 @@ use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\ExportController;
 use App\Http\Controllers\Admin\LeagueController;
 use App\Http\Controllers\Admin\PlayerController;
+use App\Http\Controllers\Admin\StaffController;
 use App\Http\Controllers\Admin\WorkflowController;
 use App\Http\Controllers\Club\ClubCampaignController;
 use App\Http\Controllers\Club\ClubDashboardController;
@@ -69,10 +70,15 @@ Route::middleware(['auth', 'role:super-admin'])->prefix('admin')->name('admin.')
     Route::resource('clubs', ClubController::class)->except(['show']);
     Route::patch('/clubs/{club}/toggle-status', [ClubController::class, 'toggleStatus'])->name('clubs.toggle-status');
 
-    // Admins
+    // Admins (club admins)
     Route::resource('admins', AdminUserController::class)->except(['show']);
     Route::patch('/admins/{admin}/toggle-status', [AdminUserController::class, 'toggleStatus'])->name('admins.toggle-status');
     Route::post('/admins/{admin}/reset-password', [AdminUserController::class, 'resetPassword'])->name('admins.reset-password');
+
+    // Staff (workflow users: creator, reviewer, approver)
+    Route::resource('staff', StaffController::class)->except(['show'])->parameters(['staff' => 'user']);
+    Route::patch('/staff/{user}/toggle-status', [StaffController::class, 'toggleStatus'])->name('staff.toggle-status');
+    Route::post('/staff/{user}/reset-password', [StaffController::class, 'resetPassword'])->name('staff.reset-password');
 
     // Players (global view)
     Route::get('/players', [PlayerController::class, 'index'])->name('players.index');

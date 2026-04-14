@@ -50,7 +50,10 @@
                     <i class="bi bi-building"></i> الأندية
                 </a>
                 <a href="{{ route('admin.admins.index') }}" class="nav-link {{ request()->routeIs('admin.admins.*') ? 'active' : '' }}">
-                    <i class="bi bi-people"></i> الإداريون
+                    <i class="bi bi-people"></i> إداريو الأندية
+                </a>
+                <a href="{{ route('admin.staff.index') }}" class="nav-link {{ request()->routeIs('admin.staff.*') ? 'active' : '' }}">
+                    <i class="bi bi-person-workspace"></i> موظفو الجمعية
                 </a>
                 <a href="{{ route('admin.players.index') }}" class="nav-link {{ request()->routeIs('admin.players.*') ? 'active' : '' }}">
                     <i class="bi bi-person-badge"></i> اللاعبون
